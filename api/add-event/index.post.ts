@@ -1,66 +1,85 @@
-import * as http from "node:http";
+import { createClient } from "@supabase/supabase-js";
 
-const events = [
-  {
-    id: 1,
-    title: "Тестовое мероприятие",
-    status: "pending",
-  },
-];
+const supabaseUrl = process.env.SUPABASE_URL;
+const supabaseKey = process.env.SUPABASE_KEY;
 
-export default async (req: http.IncomingMessage) => {
+export default async (request: Request) => {
   try {
-    const chunks: Buffer[] = [];
-
-    for await (const chunk of req) {
-      chunks.push(Buffer.from(chunk));
-    }
-
-    const rawBody = Buffer.concat(chunks).toString("utf-8");
-    const body = JSON.parse(rawBody || "{}");
-
-    if (!body.title) {
+    if (!supabaseUrl || !supabaseKey) {
       return {
+        status: 500,
         body: JSON.stringify({
-          status: "error",
-          message: "Не указано название мероприятия",
+          error: "SUPABASE_URL или SUPABASE_KEY не настроены",
         }),
         headers: {
           "Content-Type": "application/json",
+          "Access-Control-Allow-Origin": "*",
         },
-        status: 400,
       };
     }
 
-    const event = {
-      id: events.length + 1,
-      title: body.title,
-      status: "pending",
-    };
+    const body = await request.json();
 
-    events.push(event);
+    if (!body.title) {
+      return {
+        status: 400,
+        body: JSON.stringify({
+          error: "Поле title обязательно",
+        }),
+        headers: {
+          "Content-Type": "application/json",
+          "Access-Control-Allow-Origin": "*",
+        },
+      };
+    }
+
+    const supabase = createClient(supabaseUrl, supabaseKey);
+
+    const { data, error } = await supabase
+      .from("events")
+      .insert({
+        title: body.title,
+        status: body.status || "pending",
+        description: body.description || null,
+        event_date: body.event_date || null,
+        image_url: body.image_url || null,
+      })
+      .select()
+      .single();
+
+    if (error) {
+      return {
+        status: 500,
+        body: JSON.stringify({
+          error: error.message,
+        }),
+        headers: {
+          "Content-Type": "application/json",
+          "Access-Control-Allow-Origin": "*",
+        },
+      };
+    }
 
     return {
+      status: 201,
+      body: JSON.stringify(data),
+      headers: {
+        "Content-Type": "application/json",
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+        "Access-Control-Allow-Headers": "Content-Type",
+      },
+    };
+  } catch (error) {
+    return {
+      status: 500,
       body: JSON.stringify({
-        status: "success",
-        message: `Мероприятие "${body.title}" добавлено!`,
-        event,
+        error: error instanceof Error ? error.message : "Unknown error",
       }),
       headers: {
         "Content-Type": "application/json",
+        "Access-Control-Allow-Origin": "*",
       },
-      status: 200,
-    };
-  } catch {
-    return {
-      body: JSON.stringify({
-        status: "error",
-        message: "Некорректный JSON",
-      }),
-      headers: {
-        "Content-Type": "application/json",
-      },
-      status: 400,
     };
   }
 };
