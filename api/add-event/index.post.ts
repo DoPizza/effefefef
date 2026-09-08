@@ -105,7 +105,7 @@
 
 import { createClient } from "@supabase/supabase-js";
 
-export default async (request: Request) => {
+export default async (request: any) => {
   try {
     const supabaseUrl = process.env.SUPABASE_URL;
     const supabaseKey = process.env.SUPABASE_KEY;
@@ -114,7 +114,7 @@ export default async (request: Request) => {
       return {
         status: 500,
         body: JSON.stringify({
-          error: "SUPABASE_URL или SUPABASE_KEY не настроены в Stormkit",
+          error: "SUPABASE_URL или SUPABASE_KEY не настроены",
         }),
         headers: {
           "Content-Type": "application/json",
@@ -123,9 +123,15 @@ export default async (request: Request) => {
       };
     }
 
-    const body = await request.json();
+    let body;
 
-    if (!body.title || typeof body.title !== "string") {
+    if (typeof request.body === "string") {
+      body = JSON.parse(request.body);
+    } else {
+      body = request.body || {};
+    }
+
+    if (!body.title) {
       return {
         status: 400,
         body: JSON.stringify({
@@ -179,8 +185,6 @@ export default async (request: Request) => {
       headers: {
         "Content-Type": "application/json",
         "Access-Control-Allow-Origin": "*",
-        "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-        "Access-Control-Allow-Headers": "Content-Type",
       },
     };
 
