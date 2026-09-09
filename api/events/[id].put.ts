@@ -1,4 +1,3 @@
-
 import { createClient } from "@supabase/supabase-js";
 
 const supabaseUrl = process.env.SUPABASE_URL;
@@ -12,7 +11,6 @@ export default async (request: Request) => {
         "Access-Control-Allow-Methods": "GET, PUT, PATCH, DELETE, OPTIONS",
         "Access-Control-Allow-Headers": "Content-Type",
     };
-
 
     try {
 
@@ -30,18 +28,13 @@ export default async (request: Request) => {
 
         }
 
-
-        // Получаем ID из URL
         const url = new URL(request.url);
 
-        const parts =
-            url.pathname
-                .split("/")
-                .filter(Boolean);
+        const parts = url.pathname
+            .split("/")
+            .filter(Boolean);
 
-        const id =
-            parts[parts.length - 1];
-
+        const id = parts[parts.length - 1];
 
         if (!id) {
 
@@ -57,54 +50,89 @@ export default async (request: Request) => {
 
         }
 
+        const body = await request.json();
 
-        const body =
-            await request.json();
+        const updateData: Record<string, any> = {};
 
+        /*
+         * Обновляем только те поля,
+         * которые реально передали.
+         *
+         * Это позволяет использовать:
+         *
+         * PUT /api/events/8
+         * для полного редактирования
+         *
+         * и
+         *
+         * PUT /api/events/8
+         * { "status": "approved" }
+         *
+         * только для изменения статуса.
+         */
+
+        if ("title" in body) {
+            updateData.title = body.title;
+        }
+
+        if ("description" in body) {
+            updateData.description = body.description;
+        }
+
+        if ("start_date" in body) {
+            updateData.start_date = body.start_date;
+        }
+
+        if ("end_date" in body) {
+            updateData.end_date = body.end_date;
+        }
+
+        if ("price" in body) {
+            updateData.price =
+                body.price === ""
+                    ? null
+                    : body.price;
+        }
+
+        if ("image_url" in body) {
+            updateData.image_url = body.image_url;
+        }
+
+        if ("source_url" in body) {
+            updateData.source_url = body.source_url;
+        }
+
+        if ("broadcaster" in body) {
+            updateData.broadcaster = body.broadcaster;
+        }
+
+        if ("status" in body) {
+            updateData.status = body.status;
+        }
+
+        if ("18+" in body) {
+            updateData["18+"] = body["18+"] === true;
+        }
+
+        if (Object.keys(updateData).length === 0) {
+
+            return {
+                status: 400,
+
+                body: JSON.stringify({
+                    error: "Нет данных для обновления",
+                }),
+
+                headers,
+            };
+
+        }
 
         const supabase =
             createClient(
                 supabaseUrl,
                 supabaseKey
             );
-
-
-        const updateData = {
-
-            title:
-                body.title ?? null,
-
-            description:
-                body.description ?? null,
-
-            start_date:
-                body.start_date ?? null,
-
-            end_date:
-                body.end_date ?? null,
-
-            price:
-                body.price === ""
-                    ? null
-                    : body.price ?? null,
-
-            image_url:
-                body.image_url ?? null,
-
-            source_url:
-                body.source_url ?? null,
-
-            broadcaster:
-                body.broadcaster ?? null,
-
-            status:
-                body.status ?? "pending",
-
-            "18+":
-                body["18+"] === true,
-
-        };
-
 
         const {
             data,
@@ -121,7 +149,6 @@ export default async (request: Request) => {
 
             .single();
 
-
         if (error) {
 
             return {
@@ -136,7 +163,6 @@ export default async (request: Request) => {
 
         }
 
-
         return {
 
             status: 200,
@@ -149,7 +175,6 @@ export default async (request: Request) => {
             headers,
 
         };
-
 
     } catch (error) {
 
