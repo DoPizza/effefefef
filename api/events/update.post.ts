@@ -1,45 +1,66 @@
 import { createClient } from "@supabase/supabase-js";
 
-const supabase = createClient(
-  process.env.SUPABASE_URL!,
-  process.env.SUPABASE_KEY!
-);
-
-export default async function handler(request: Request) {
+export default async (request: any) => {
   try {
-    const body = await request.json();
+    const supabaseUrl = process.env.SUPABASE_URL;
+    const supabaseKey = process.env.SUPABASE_KEY;
 
-    const { id, ...fields } = body;
+    if (!supabaseUrl || !supabaseKey) {
+      return {
+        status: 500,
+        body: JSON.stringify({
+          error: "SUPABASE_URL или SUPABASE_KEY не настроены"
+        }),
+        headers: {
+          "Content-Type": "application/json",
+          "Access-Control-Allow-Origin": "*"
+        }
+      };
+    }
+
+    let body;
+
+    if (typeof request.body === "string") {
+      body = JSON.parse(request.body);
+    } else {
+      body = request.body || {};
+    }
+
+    const id = body.id;
 
     if (!id) {
-      return new Response(
-        JSON.stringify({
+      return {
+        status: 400,
+        body: JSON.stringify({
           error: "Не указан id мероприятия"
         }),
-        {
-          status: 400,
-          headers: {
-            "Content-Type": "application/json",
-            "Access-Control-Allow-Origin": "*"
-          }
+        headers: {
+          "Content-Type": "application/json",
+          "Access-Control-Allow-Origin": "*"
         }
-      );
+      };
     }
 
+    const fields = { ...body };
+    delete fields.id;
+
     if (Object.keys(fields).length === 0) {
-      return new Response(
-        JSON.stringify({
+      return {
+        status: 400,
+        body: JSON.stringify({
           error: "Не указаны поля для изменения"
         }),
-        {
-          status: 400,
-          headers: {
-            "Content-Type": "application/json",
-            "Access-Control-Allow-Origin": "*"
-          }
+        headers: {
+          "Content-Type": "application/json",
+          "Access-Control-Allow-Origin": "*"
         }
-      );
+      };
     }
+
+    const supabase = createClient(
+      supabaseUrl,
+      supabaseKey
+    );
 
     const { data, error } = await supabase
       .from("events")
@@ -49,50 +70,44 @@ export default async function handler(request: Request) {
       .single();
 
     if (error) {
-      console.error(error);
-
-      return new Response(
-        JSON.stringify({
-          error: error.message
+      return {
+        status: 500,
+        body: JSON.stringify({
+          error: error.message,
+          details: error.details,
+          hint: error.hint
         }),
-        {
-          status: 500,
-          headers: {
-            "Content-Type": "application/json",
-            "Access-Control-Allow-Origin": "*"
-          }
+        headers: {
+          "Content-Type": "application/json",
+          "Access-Control-Allow-Origin": "*"
         }
-      );
+      };
     }
 
-    return new Response(
-      JSON.stringify({
+    return {
+      status: 200,
+      body: JSON.stringify({
         ok: true,
         event: data
       }),
-      {
-        status: 200,
-        headers: {
-          "Content-Type": "application/json",
-          "Access-Control-Allow-Origin": "*"
-        }
+      headers: {
+        "Content-Type": "application/json",
+        "Access-Control-Allow-Origin": "*"
       }
-    );
+    };
 
   } catch (error) {
-    console.error(error);
-
-    return new Response(
-      JSON.stringify({
-        error: "Ошибка обработки запроса"
+    return {
+      status: 500,
+      body: JSON.stringify({
+        error: error instanceof Error
+          ? error.message
+          : "Ошибка обработки запроса"
       }),
-      {
-        status: 500,
-        headers: {
-          "Content-Type": "application/json",
-          "Access-Control-Allow-Origin": "*"
-        }
+      headers: {
+        "Content-Type": "application/json",
+        "Access-Control-Allow-Origin": "*"
       }
-    );
+    };
   }
-}
+};
