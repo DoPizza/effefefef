@@ -5,6 +5,7 @@
   "scripts": {},
   "dependencies": {
     "@netlify/functions": "^2.8.1"
+    "@supabase/supabase-js": "^2.57.0"
   },
   "devDependencies": {
     "typescript": "^5.9.3"
