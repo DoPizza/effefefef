@@ -64,6 +64,20 @@ export default async (req: Request) => {
       return json(data ?? []);
     }
 
+
+      if (req.method === "GET" && pathname === "/api/debug") {
+        const key = process.env.SUPABASE_KEY;
+      
+        return json({
+          hasUrl: !!process.env.SUPABASE_URL,
+          hasKey: !!key,
+          keyPrefix: key ? key.substring(0, 12) : null
+        });
+      }
+
+
+
+
     // POST /api/add-event
     if (req.method === "POST" && pathname === "/api/add-event") {
       const body = await readBody(req);
