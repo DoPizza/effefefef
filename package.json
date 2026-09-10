@@ -1,0 +1,10 @@
+{
+  "name": "stormkit-test-backend",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {},
+  "devDependencies": {
+    "@stormkit/serverless": "^2.7.4",
+    "typescript": "^5.9.3"
+  }
+}
